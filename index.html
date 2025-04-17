@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Documentation Browser</title>
+    <style>
+      :root {
+        --primary-color: #4a6fa5;
+        --secondary-color: #166088;
+        --accent-color: #4fc3f7;
+        --background-color: #f5f7fa;
+        --card-color: #ffffff;
+        --text-color: #333333;
+        --border-color: #e0e0e0;
+        --danger-color: #f44336;
+        --danger-hover: #d32f2f;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 20px 0;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .search-bar {
+        display: flex;
+        gap: 10px;
+        width: 60%;
+      }
+
+      input[type="text"] {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        width: 100%;
+        font-size: 16px;
+      }
+
+      button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+
+      button:hover {
+        background-color: #2196f3;
+      }
+
+      .last-update {
+        background-color: var(--card-color);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        font-size: 14px;
+      }
+
+      .docs-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+      }
+
+      .loading {
+        text-align: center;
+        font-size: 18px;
+        margin: 50px 0;
+      }
+
+      .error {
+        background-color: #ffebee;
+        color: #c62828;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+
+      .success {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+
+      .doc-card {
+        background-color: var(--card-color);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+
+      .doc-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+      }
+
+      .doc-header {
+        background-color: var(--secondary-color);
+        color: white;
+        padding: 15px;
+        position: relative;
+      }
+
+      .doc-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 5px;
+        padding-right: 30px;
+      }
+
+      .doc-date {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+
+      .doc-body {
+        padding: 15px;
+      }
+
+      .doc-preview {
+        margin-bottom: 15px;
+        font-size: 14px;
+        color: #666;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 65px;
+      }
+
+      .button-container {
+        display: flex;
+        gap: 10px;
+      }
+
+      .view-button {
+        background-color: var(--primary-color);
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+      }
+
+      .delete-button {
+        background-color: var(--danger-color);
+        flex: 0 0 auto;
+        text-align: center;
+        padding: 10px;
+        white-space: nowrap;
+      }
+
+      .delete-button:hover {
+        background-color: var(--danger-hover);
+      }
+
+      .modal-delete-button {
+        background-color: var(--danger-color);
+        margin-top: 20px;
+      }
+
+      .modal-delete-button:hover {
+        background-color: var(--danger-hover);
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 100;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow-y: auto;
+      }
+
+      .modal-content {
+        background-color: var(--card-color);
+        margin: 5% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 80%;
+        max-width: 900px;
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+      }
+
+      .modal-title-container {
+        flex: 1;
+      }
+
+      .close {
+        font-size: 28px;
+        font-weight: bold;
+        color: #aaa;
+        cursor: pointer;
+        line-height: 1;
+      }
+
+      .close:hover {
+        color: var(--text-color);
+      }
+
+      .tab-container {
+        margin-top: 20px;
+      }
+
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 20px;
+      }
+
+      .tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+      }
+
+      .tab.active {
+        border-bottom: 2px solid var(--accent-color);
+        font-weight: 600;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Confirmation Modal */
+      .confirm-modal {
+        display: none;
+        position: fixed;
+        z-index: 200;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .confirm-content {
+        background-color: var(--card-color);
+        margin: 15% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+        text-align: center;
+      }
+
+      .confirm-title {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: var(--danger-color);
+      }
+
+      .confirm-message {
+        margin-bottom: 20px;
+      }
+
+      .confirm-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .confirm-delete {
+        background-color: var(--danger-color);
+      }
+
+      .confirm-delete:hover {
+        background-color: var(--danger-hover);
+      }
+
+      .confirm-cancel {
+        background-color: #9e9e9e;
+      }
+
+      .confirm-cancel:hover {
+        background-color: #757575;
+      }
+
+      pre {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        margin: 15px 0;
+      }
+
+      code {
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      /* Documentation Specific Styles */
+      .doc {
+        font-family: sans-serif;
+        border: 1px solid #ccc;
+        padding: 15px;
+        margin: 10px;
+        background-color: #f9f9f9;
+      }
+
+      .code-block {
+        background-color: #e0e0e0;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        overflow-x: auto;
+      }
+
+      .code-block pre {
+        margin: 0;
+      }
+
+      .code-block code {
+        font-family: monospace;
+        display: block;
+        white-space: pre-wrap;
+      }
+
+      .explanation-section {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: #fff;
+        transition: background-color 0.3s ease;
+      }
+
+      .explanation-section:hover {
+        background-color: #f0f0f0;
+      }
+
+      .explanation-section h3 {
+        color: #555;
+        margin-top: 0;
+        margin-bottom: 5px;
+      }
+
+      .explanation-section ul {
+        padding-left: 20px;
+        margin-top: 5px;
+      }
+
+      .explanation-section li {
+        margin-bottom: 3px;
+      }
+
+      .keyword {
+        color: blue;
+        font-weight: bold;
+      }
+
+      .class-name {
+        color: green;
+        font-weight: bold;
+      }
+
+      .method-name {
+        color: purple;
+        font-weight: bold;
+      }
+
+      .type-name {
+        color: teal;
+        font-style: italic;
+      }
+
+      .variable-name {
+        color: orange;
+      }
+
+      .summary {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f0f8ff;
+        border: 1px solid #add8e6;
+        border-radius: 5px;
+      }
+
+      @media (max-width: 768px) {
+        .header-content {
+          flex-direction: column;
+          gap: 15px;
+        }
+
+        .search-bar {
+          width: 100%;
+        }
+
+        .docs-container {
+          grid-template-columns: 1fr;
+        }
+
+        .modal-content {
+          width: 95%;
+          margin: 10% auto;
+        }
+
+        .button-container {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body id="drop-area">
+    <input type="file" id="fileElem" accept=".txt" style="display: none" />
+    <div id="status"></div>
+
+    <div id="file-preview"></div>
+    <header>
+      <div class="container header-content">
+        <div class="logo">Code Documentation</div>
+        <div class="search-bar">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search by title..."
+          />
+          <button id="search-button">Search</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="last-update" id="last-update">
+        Loading latest update information...
+      </div>
+
+      <div id="loading" class="loading">Loading documents...</div>
+      <div id="error" class="error" style="display: none"></div>
+      <div id="success" class="success" style="display: none"></div>
+      <div id="docs-container" class="docs-container"></div>
+    </div>
+
+    <!-- Document Modal -->
+    <div id="doc-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title-container">
+            <h2 id="modal-title"></h2>
+            <p id="modal-date"></p>
+          </div>
+          <span class="close">&times;</span>
+        </div>
+
+        <div class="tab-container">
+          <div class="tabs">
+            <div class="tab active" data-tab="documentation">Documentation</div>
+            <div class="tab" data-tab="code">Original Code</div>
+          </div>
+          <div class="tab-content active" id="documentation-content"></div>
+          <div class="tab-content" id="code-content"></div>
+        </div>
+
+        <button id="modal-delete-button" class="modal-delete-button">
+          Delete This Document
+        </button>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="confirm-modal">
+      <div class="confirm-content">
+        <div class="confirm-title">Confirm Deletion</div>
+        <div class="confirm-message">
+          Are you sure you want to delete this document? This action cannot be
+          undone.
+        </div>
+        <div class="confirm-buttons">
+          <button id="confirm-cancel" class="confirm-cancel">Cancel</button>
+          <button id="confirm-delete" class="confirm-delete">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // API Configuration
+      const API_URL = "http://localhost:4000/api"; // Change this to your server URL
+      const API_KEY = localStorage.getItem("ciphertext") || "1234"; // Replace with your actual API key
+
+      // DOM Elements
+      const docsContainer = document.getElementById("docs-container");
+      const loadingElement = document.getElementById("loading");
+      const errorElement = document.getElementById("error");
+      const successElement = document.getElementById("success");
+      const lastUpdateElement = document.getElementById("last-update");
+      const searchInput = document.getElementById("search-input");
+      const searchButton = document.getElementById("search-button");
+      const modal = document.getElementById("doc-modal");
+      const modalTitle = document.getElementById("modal-title");
+      const modalDate = document.getElementById("modal-date");
+      const docContent = document.getElementById("documentation-content");
+      const codeContent = document.getElementById("code-content");
+      const closeModal = document.querySelector(".close");
+      const tabs = document.querySelectorAll(".tab");
+      const modalDeleteButton = document.getElementById("modal-delete-button");
+      const confirmModal = document.getElementById("confirm-modal");
+      const confirmCancel = document.getElementById("confirm-cancel");
+      const confirmDelete = document.getElementById("confirm-delete");
+
+      // Current document ID (for deletion operations)
+      let currentDocId = null;
+
+      // Fetch and display the last update time
+      async function fetchLastUpdate() {
+        try {
+          const response = await fetch(`${API_URL}/currentchange`, {
+            headers: {
+              "X-API-KEY": API_KEY,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch update information");
+          }
+
+          const data = await response.json();
+
+          if (data.currentChange) {
+            const date = new Date(data.currentChange);
+            lastUpdateElement.innerHTML = `
+                        <strong>Last Updated:</strong> ${date.toLocaleString()} 
+                        <br><em>${data.description || ""}</em>
+                    `;
+          } else {
+            lastUpdateElement.textContent = "No updates recorded yet";
+          }
+        } catch (error) {
+          console.error("Error fetching update info:", error);
+          lastUpdateElement.textContent = "Unable to load update information";
+        }
+      }
+
+      // Fetch all documents
+      async function fetchDocs() {
+        showLoading();
+        hideError();
+        hideSuccess();
+
+        try {
+          const response = await fetch(`${API_URL}/docs`, {
+            headers: {
+              "X-API-KEY": API_KEY,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch documents");
+          }
+
+          const data = await response.json();
+          displayDocs(data.data);
+        } catch (error) {
+          console.error("Error:", error);
+          showError(error.message);
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // Search documents
+      async function searchDocs(query) {
+        showLoading();
+        hideError();
+        hideSuccess();
+
+        try {
+          const response = await fetch(
+            `${API_URL}/search?q=${encodeURIComponent(query)}`,
+            {
+              headers: {
+                "X-API-KEY": API_KEY,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Search failed");
+          }
+
+          const data = await response.json();
+          displayDocs(data.data);
+
+          if (data.data.length === 0) {
+            docsContainer.innerHTML =
+              "<p>No documents found matching your search.</p>";
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          showError(error.message);
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // Delete document
+      async function deleteDoc(docId) {
+        showLoading();
+        hideError();
+        hideSuccess();
+
+        try {
+          const response = await fetch(`${API_URL}/docs_delete/${docId}`, {
+            method: "DELETE",
+            headers: {
+              "X-API-KEY": API_KEY,
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to delete document");
+          }
+
+          const data = await response.json();
+          showSuccess("Document deleted successfully");
+
+          // Close the modal
+          modal.style.display = "none";
+
+          // Refresh documents list
+          fetchDocs();
+          fetchLastUpdate();
+        } catch (error) {
+          console.error("Error:", error);
+          showError(error.message);
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // Display documents
+      function displayDocs(docs) {
+        docsContainer.innerHTML = "";
+
+        if (!docs || docs.length === 0) {
+          docsContainer.innerHTML = "<p>No documents available.</p>";
+          return;
+        }
+
+        docs.forEach((doc) => {
+          const date = new Date(doc.createdAt);
+          const docPreview = doc.documentation.substring(0, 150) + "...";
+
+          const docCard = document.createElement("div");
+          docCard.className = "doc-card";
+          docCard.innerHTML = `
+                    <div class="doc-header">
+                        <div class="doc-title">${escapeHtml(doc.title)}</div>
+                        <div class="doc-date">Created: ${date.toLocaleDateString()}</div>
+                    </div>
+                    <div class="doc-body">
+                        <div class="doc-preview">${escapeHtml(docPreview)}</div>
+                        <div class="button-container">
+                            <button class="view-button">View Details</button>
+                            <button class="delete-button" data-id="${
+                              doc._id
+                            }">Delete</button>
+                        </div>
+                    </div>
+                `;
+
+          docCard
+            .querySelector(".view-button")
+            .addEventListener("click", () => {
+              openDocModal(doc);
+            });
+
+          docCard
+            .querySelector(".delete-button")
+            .addEventListener("click", (e) => {
+              e.stopPropagation();
+              openConfirmModal(doc._id, doc.title);
+            });
+
+          docsContainer.appendChild(docCard);
+        });
+      }
+
+      // Open document modal
+      function openDocModal(doc) {
+        modalTitle.textContent = doc.title;
+        modalDate.textContent = `Created: ${new Date(
+          doc.createdAt
+        ).toLocaleString()}`;
+
+        // Store current document ID for delete operation
+        currentDocId = doc._id;
+
+        // Process documentation
+        docContent.innerHTML = processDocumentation(doc.documentation);
+
+        // Display original code
+        codeContent.innerHTML = `<pre><code>${escapeHtml(
+          doc.code
+        )}</code></pre>`;
+
+        modal.style.display = "block";
+      }
+
+      // Open confirmation modal
+      function openConfirmModal(docId, docTitle) {
+        currentDocId = docId;
+        document.querySelector(
+          ".confirm-message"
+        ).innerHTML = `Are you sure you want to delete <strong>${escapeHtml(
+          docTitle
+        )}</strong>? This action cannot be undone.`;
+        confirmModal.style.display = "block";
+      }
+
+      // Process documentation content
+      function processDocumentation(rawData) {
+        let htmlContent = "";
+        let codeBlock = "";
+        let inCodeBlock = false;
+        let inExplanationSection = false;
+
+        const lines = rawData.trim().split("\n");
+
+        lines.forEach((line) => {
+          const trimmedLine = line.trim();
+
+          // Handle code block starts
+          if (trimmedLine.startsWith("*`")) {
+            // Close previous code block if exists
+            if (inCodeBlock) {
+              htmlContent += `<div class="code-block"><pre><code class="xpp">${escapeHtml(
+                codeBlock.trim()
+              )}</code></pre></div>`;
+              codeBlock = "";
+            }
+
+            // Close previous explanation section if open
+            if (inExplanationSection) {
+              htmlContent += "</div>";
+              inExplanationSection = false;
+            }
+
+            inCodeBlock = true;
+            const codeMatch = trimmedLine.match(/\*\`(.*?)\`\*\*/);
+
+            if (codeMatch && codeMatch[1]) {
+              codeBlock += codeMatch[1] + "\n";
+              inExplanationSection = true;
+
+              // Handle different code types
+              const explanationMatch =
+                trimmedLine.match(/\*\`.*?\`\*\*\: (.*)/);
+              if (explanationMatch && explanationMatch[1]) {
+                htmlContent += `<div class="explanation-section"><h3><code>${escapeHtml(
+                  codeMatch[1]
+                )}</code></h3><p>${escapeHtml(explanationMatch[1])}</p>`;
+              } else if (codeMatch[1].startsWith("class ")) {
+                const className = codeMatch[1].split(" ")[1].split("{")[0];
+                htmlContent += `<div class="explanation-section"><h3><code>${escapeHtml(
+                  codeMatch[1]
+                )}</code></h3><p>This line declares a <span class="keyword">class</span> named <span class="class-name">${escapeHtml(
+                  className
+                )}</span>.</p>`;
+              } else if (codeMatch[1].includes("main(Args _args)")) {
+                htmlContent += `<div class="explanation-section"><h3><code>${escapeHtml(
+                  codeMatch[1]
+                )}</code></h3><p>This defines the <span class="method-name">main</span> method.</p>`;
+              } else if (codeMatch[1].startsWith("str ")) {
+                const parts = codeMatch[1].split(" ");
+                const variableName = parts[1].split(" ")[0];
+                const value = parts.slice(3).join(" ");
+                htmlContent += `<div class="explanation-section"><h3><code>${escapeHtml(
+                  codeMatch[1]
+                )}</code></h3><p>This declares a string variable named <span class="variable-name">${escapeHtml(
+                  variableName
+                )}</span> and initializes it with the value ${escapeHtml(
+                  value
+                )}.</p>`;
+              } else if (codeMatch[1].startsWith("info(")) {
+                htmlContent += `<div class="explanation-section"><h3><code>${escapeHtml(
+                  codeMatch[1]
+                )}</code></h3><p>This line uses the <span class="method-name">info</span> statement.</p>`;
+              } else {
+                htmlContent += `<div class="explanation-section"><h3><code>${escapeHtml(
+                  codeMatch[1]
+                )}</code></h3>`;
+              }
+            }
+          }
+          // Handle detail lines
+          else if (trimmedLine.startsWith("* ")) {
+            const detail = trimmedLine.substring(2).trim();
+
+            if (detail.startsWith("public:")) {
+              htmlContent += `<ul><li><span class="keyword">public</span>: ${escapeHtml(
+                detail.substring(8)
+              )}</li></ul>`;
+            } else if (detail.startsWith("static:")) {
+              htmlContent += `<ul><li><span class="keyword">static</span>: ${escapeHtml(
+                detail.substring(8)
+              )}</li></ul>`;
+            } else if (detail.startsWith("void:")) {
+              htmlContent += `<ul><li><span class="keyword">void</span>: ${escapeHtml(
+                detail.substring(6)
+              )}</li></ul>`;
+            } else if (detail.startsWith("Args args:")) {
+              htmlContent += `<ul><li><span class="type-name">Args</span> <span class="variable-name">args</span>: ${escapeHtml(
+                detail.substring(11)
+              )}</li></ul>`;
+            } else if (detail.startsWith("str:")) {
+              htmlContent += `<ul><li><span class="keyword">str</span>: ${escapeHtml(
+                detail.substring(5)
+              )}</li></ul>`;
+            } else if (detail.startsWith("s:")) {
+              htmlContent += `<ul><li><span class="variable-name">s</span>: ${escapeHtml(
+                detail.substring(3)
+              )}</li></ul>`;
+            } else if (detail.startsWith('"')) {
+              htmlContent += `<ul><li>${escapeHtml(detail)}</li></ul>`;
+            } else {
+              htmlContent += `<ul><li>${escapeHtml(detail)}</li></ul>`;
+            }
+          }
+          // Handle summary sections
+          else if (trimmedLine.startsWith("In summary,")) {
+            // Close previous explanation section if open
+            if (inExplanationSection) {
+              htmlContent += "</div>";
+              inExplanationSection = false;
+            }
+
+            // Add the summary
+            htmlContent += `<div class="summary"><p>${escapeHtml(
+              trimmedLine
+            )}</p></div>`;
+
+            // Close code block if open
+            if (inCodeBlock) {
+              htmlContent += `<div class="code-block"><pre><code class="xpp">${escapeHtml(
+                codeBlock.trim()
+              )}</code></pre></div>`;
+              codeBlock = "";
+              inCodeBlock = false;
+            }
+          }
+          // Handle non-empty lines within code blocks
+          else if (trimmedLine !== "" && inCodeBlock) {
+            if (trimmedLine.startsWith("*")) {
+              codeBlock += trimmedLine.substring(1) + "\n";
+            } else {
+              codeBlock += trimmedLine + "\n";
+            }
+          }
+        });
+
+        // Close any open sections
+        if (inExplanationSection) {
+          htmlContent += "</div>";
+        }
+
+        if (inCodeBlock && codeBlock.trim() !== "") {
+          htmlContent += `<div class="code-block"><pre><code class="xpp">${escapeHtml(
+            codeBlock.trim()
+          )}</code></pre></div>`;
+        }
+
+        return `<div class="doc">${htmlContent}</div>`;
+      }
+
+      // Helper function to escape HTML characters
+      function escapeHtml(unsafe) {
+        if (!unsafe) return "";
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // UI helpers
+      function showLoading() {
+        loadingElement.style.display = "block";
+      }
+
+      function hideLoading() {
+        loadingElement.style.display = "none";
+      }
+
+      function showError(message) {
+        errorElement.textContent = `Error: ${message}`;
+        errorElement.style.display = "block";
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          hideError();
+        }, 5000);
+      }
+
+      function hideError() {
+        errorElement.style.display = "none";
+      }
+
+      function showSuccess(message) {
+        successElement.textContent = message;
+        successElement.style.display = "block";
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          hideSuccess();
+        }, 5000);
+      }
+
+      function hideSuccess() {
+        successElement.style.display = "none";
+      }
+
+      // Event Listeners
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchDocs();
+        fetchLastUpdate();
+      });
+
+      searchButton.addEventListener("click", () => {
+        const query = searchInput.value.trim();
+        if (query) {
+          searchDocs(query);
+        } else {
+          fetchDocs();
+        }
+      });
+
+      searchInput.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+          const query = searchInput.value.trim();
+          if (query) {
+            searchDocs(query);
+          } else {
+            fetchDocs();
+          }
+        }
+      });
+
+      closeModal.addEventListener("click", () => {
+        modal.style.display = "none";
+      });
+
+      window.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.style.display = "none";
+        }
+        if (e.target === confirmModal) {
+          confirmModal.style.display = "none";
+        }
+      });
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          // Remove active class from all tabs and content
+          tabs.forEach((t) => t.classList.remove("active"));
+          document.querySelectorAll(".tab-content").forEach((content) => {
+            content.classList.remove("active");
+          });
+
+          // Add active class to clicked tab and corresponding content
+          tab.classList.add("active");
+          const tabName = tab.getAttribute("data-tab");
+          document.getElementById(`${tabName}-content`).classList.add("active");
+        });
+      });
+
+      // Add event listener for modal delete button
+      modalDeleteButton.addEventListener("click", () => {
+        if (currentDocId) {
+          openConfirmModal(currentDocId, modalTitle.textContent);
+        }
+      });
+
+      // Add event listeners for confirmation modal buttons
+      confirmCancel.addEventListener("click", () => {
+        confirmModal.style.display = "none";
+      });
+
+      confirmDelete.addEventListener("click", () => {
+        if (currentDocId) {
+          // Close confirmation modal
+          confirmModal.style.display = "none";
+
+          // Delete the document
+          deleteDoc(currentDocId);
+
+          // Reset current doc ID
+          currentDocId = null;
+        }
+      });
+    </script>
+    <script>
+      // Get DOM elements
+      const dropArea = document.getElementById("drop-area");
+      const fileElem = document.getElementById("fileElem");
+      const status = document.getElementById("status");
+      const filePreview = document.getElementById("file-preview");
+      //   const previewContent = document.getElementById("preview-content");
+
+      // Prevent default browser behavior for drag events
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // Highlight drop area when item is dragged over it
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropArea.addEventListener(eventName, highlight, false);
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+      });
+
+      function highlight(e) {
+        dropArea.classList.add("highlight");
+      }
+
+      function unhighlight(e) {
+        dropArea.classList.remove("highlight");
+      }
+
+      // Handle dropped files
+      dropArea.addEventListener("drop", handleDrop, false);
+
+      function handleDrop(e) {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        handleFiles(files);
+      }
+
+      function handleFiles(files) {
+        files = [...files];
+        if (files.length > 0) {
+          handleTextFile(files[0]);
+        }
+      }
+
+      function showStatus(message, isSuccess) {
+        status.textContent = message;
+        status.className = isSuccess ? "success" : "error";
+        status.style.display = "block";
+
+        // Hide status after 5 seconds
+        setTimeout(() => {
+          status.style.display = "none";
+        }, 2000);
+      }
+
+      function handleTextFile(file) {
+        if (file.type === "text/plain" || file.name.endsWith(".txt")) {
+          const reader = new FileReader();
+
+          reader.onload = function (event) {
+            const fileContent = event.target.result;
+
+            // Store in localStorage
+            try {
+              localStorage.setItem("ciphertext", fileContent);
+              showStatus(
+                `File "${file.name}" successfully uploaded and stored.`,
+                true
+              );
+              //   filePreview.style.display = "block";
+            } catch (e) {
+              console.error("Error storing file in localStorage:", e);
+              showStatus("Error storing file: " + e.message, false);
+            }
+          };
+
+          reader.onerror = function (event) {
+            console.error("Error reading the text file:", event.target.error);
+            showStatus("Error reading file: " + event.target.error, false);
+          };
+
+          reader.readAsText(file);
+        } else {
+          showStatus(
+            `File "${file.name}" rejected. Only .txt files are allowed.`,
+            false
+          );
+          console.log("Rejected file:", file.name, "type:", file.type);
+        }
+      }
+
+      // Handle files selected via the input element
+      fileElem.addEventListener("change", function () {
+        const files = this.files;
+        if (files.length > 0) {
+          handleTextFile(files[0]);
+        }
+      });
+
+      // Check for existing data in localStorage
+      window.addEventListener("DOMContentLoaded", function () {
+        const savedData = localStorage.getItem("ciphertext");
+        if (savedData) {
+          filePreview.style.display = "block";
+          showStatus("Previously uploaded file data found and loaded.", true);
+        }
+      });
+    </script>
+  </body>
+</html>
